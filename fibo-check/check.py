@@ -130,7 +130,7 @@ def main():
                          lambda b, a=axioms: consistency(b, with_axioms(args.fibo, a), 1800)))
 
     names = list(builds)
-    lines = ["| fix | input | expected with the fixes | " + " | ".join(names) + " |",
+    lines = ["| fix | input | expected with the fixes (and no error lines, except for unreadable input) | " + " | ".join(names) + " |",
              "|---|---|---|" + "---|" * len(names)]
     failures = []
     results = []
@@ -145,9 +145,14 @@ def main():
             if c.get("seconds") is not None and args.fibo and "FIBO" in what:
                 t += f" ({c['seconds']} s, {c['mb']} MB)"
             shown.append(t)
-        got = cells[names[-1]]["text"]
-        if got != expected:
-            failures.append(f"{what}: {names[-1]} gave '{got}', expected '{expected}'")
+        got = cells[names[-1]]
+        core = got["text"].split(", ", 2)
+        core = ", ".join(core[:2]) if len(core) > 1 else got["text"]
+        # an unreadable input is expected to log why; everything else must log no error
+        errors_ok = fix == "C" or not got.get("errors")
+        if core != expected or not errors_ok:
+            failures.append(f"{what}: {names[-1]} gave '{got['text']}', expected '{expected}'"
+                            + ("" if fix == "C" else " and no error lines"))
         lines.append(f"| {fix} | {what} | {expected} | " + " | ".join(shown) + " |")
 
     text = "\n".join(lines) + "\n\n"
