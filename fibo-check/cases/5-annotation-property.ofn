@@ -1,0 +1,10 @@
+Prefix(:=<http://example.org/t#>)
+Prefix(rdfs:=<http://www.w3.org/2000/01/rdf-schema#>)
+Ontology(<http://example.org/t>
+Declaration(AnnotationProperty(:note))
+Declaration(Class(:A))
+Declaration(Class(:B))
+DisjointClasses(:A :B)
+ClassAssertion(:A :x)
+ClassAssertion(:B :x)
+)

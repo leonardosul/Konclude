@@ -1,0 +1,3 @@
+Declaration(Class(<http://example.org/acme#NewSuperclass>))
+SubClassOf(<https://spec.edmcouncil.org/fibo/ontology/BE/LegalEntities/CorporateBodies/PubliclyHeldCompany> <http://example.org/acme#NewSuperclass>)
+SubClassOf(<http://example.org/acme#NewSuperclass> <https://spec.edmcouncil.org/fibo/ontology/BE/LegalEntities/CorporateBodies/NotForProfitCorporation>)

@@ -1,0 +1,11 @@
+Prefix(:=<http://example.org/t#>)
+Prefix(xsd:=<http://www.w3.org/2001/XMLSchema#>)
+Ontology(<http://example.org/t>
+Declaration(Class(:C))
+Declaration(Class(:D))
+Declaration(Class(:E))
+Declaration(DataProperty(:p))
+Declaration(ObjectProperty(:q))
+SubClassOf(:C DataMaxCardinality(1 :p xsd:dateTimeStamp))
+SubClassOf(:D ObjectMaxCardinality(1 :q :E))
+)

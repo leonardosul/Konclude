@@ -1,0 +1,9 @@
+Prefix(:=<http://example.org/t#>)
+Ontology(<http://example.org/main>
+Import(<file:@DIR@/import-part.ofn>)
+Declaration(Class(:A))
+Declaration(Class(:B))
+Declaration(NamedIndividual(:x))
+DisjointClasses(:A :B)
+ClassAssertion(:A :x)
+)

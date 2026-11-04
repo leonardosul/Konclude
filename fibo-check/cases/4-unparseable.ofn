@@ -1,0 +1,6 @@
+Prefix(:=<http://example.org/t#>)
+Ontology(<http://example.org/t>
+Declaration(Class(:A)
+DisjointClasses(:A :B)
+ClassAssertion(:A :x)
+ClassAssertion(:B :x)

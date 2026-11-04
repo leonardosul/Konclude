@@ -1,0 +1,6 @@
+Prefix(:=<http://example.org/t#>)
+Ontology(<http://example.org/part>
+Declaration(Class(:B))
+Declaration(NamedIndividual(:x))
+ClassAssertion(:B :x)
+)

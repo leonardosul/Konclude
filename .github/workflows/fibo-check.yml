@@ -1,0 +1,110 @@
+name: FIBO check
+
+# Builds Konclude from konclude/Konclude master and from the fix branch, builds the FIBO closure
+# from its public release, and runs both builds side by side on small cases and on FIBO.
+# The job summary has the table; fibo-check/check.py fails the run if the branch build does not
+# give every expected answer.
+on:
+  push:
+    branches: [fibo-check]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Branch of this repository with the fixes
+        default: fix/datetimestamp-crash-and-parsing
+
+env:
+  BRANCH: ${{ inputs.branch || 'fix/datetimestamp-crash-and-parsing' }}
+  FIBO_TAG: master_2026Q3
+  ROBOT: https://github.com/ontodev/robot/releases/download/v1.9.10/robot.jar
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - { name: master, repository: konclude/Konclude, ref: master }
+          - { name: branch, repository: '', ref: '' }
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repository || github.repository }}
+          ref: ${{ matrix.ref || env.BRANCH }}
+      - uses: jurplel/install-qt-action@v4
+        with: { version: '5.15.2', cache: true }
+      - name: Compile (as upstream's Ubuntu job)
+        run: |
+          git log -1 --format='%H %s'
+          qmake KoncludeWithoutRedland.pro
+          make -j "$(nproc)" > make.log 2>&1 || { tail -50 make.log; exit 1; }
+          git rev-parse HEAD > Release/commit.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: konclude-${{ matrix.name }}
+          path: |
+            Release/Konclude
+            Release/commit.txt
+
+  fibo:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - name: FIBO closure (FIBO production + the OMG Commons, LCC and MVF modules it imports)
+        run: |
+          curl -fsSL -o robot.jar "$ROBOT"
+          git clone -q --depth 1 --branch "$FIBO_TAG" https://github.com/edmcouncil/fibo.git
+          java -Xmx6G -jar robot.jar merge --catalog fibo/catalog-v001.xml \
+            --input fibo/AboutFIBOProd.rdf --output closure.ofn
+          java -Xmx6G -jar robot.jar remove --input closure.ofn --select individuals --output terms.ofn
+          set +e
+          java -Xmx6G -jar robot.jar reason --reasoner hermit --input terms.ofn --output reasoned.ofn > hermit.log 2>&1
+          set -e
+          n=$(grep -oiE 'there (are|is) [0-9]+ unsatisfiable' hermit.log | grep -oE '[0-9]+' || echo 0)
+          echo "{\"terms_unsatisfiable\": $n}" > hermit.json
+          {
+            echo "### FIBO closure"
+            echo "edmcouncil/fibo \`$FIBO_TAG\` ($(git -C fibo rev-parse HEAD)), merged by ROBOT 1.9.10 with the OMG modules fetched from omg.org; sha256 \`$(sha256sum closure.ofn | cut -c1-16)\`"
+            echo "- $(grep -c '^Declaration(Class(' closure.ofn) classes, $(grep -c '^Declaration(NamedIndividual(' closure.ofn) named individuals, $(grep -c '^Declaration(AnnotationProperty(' closure.ofn) annotation property declarations, $(grep -c 'dateTimeStamp' closure.ofn) lines naming dateTimeStamp"
+            echo "- HermiT on the terms alone (individuals removed): $n unsatisfiable classes"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fibo
+          path: |
+            closure.ofn
+            hermit.json
+            hermit.log
+
+  check:
+    needs: [build, fibo]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jurplel/install-qt-action@v4
+        with: { version: '5.15.2', cache: true }
+      - uses: actions/download-artifact@v4
+        with: { path: in }
+      - name: Both builds side by side
+        run: |
+          chmod +x in/konclude-*/Konclude
+          {
+            echo "### Builds"
+            echo "- master: konclude/Konclude \`$(cat in/konclude-master/commit.txt)\`"
+            echo "- branch: $GITHUB_REPOSITORY \`$BRANCH\` \`$(cat in/konclude-branch/commit.txt)\`"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+          set +e
+          python3 fibo-check/check.py --build master=in/konclude-master/Konclude --build branch=in/konclude-branch/Konclude \
+            --fibo in/fibo/closure.ofn --hermit in/fibo/hermit.json --out summary.md
+          status=$?
+          cat summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit $status
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: results
+          path: |
+            summary.md
+            summary.json

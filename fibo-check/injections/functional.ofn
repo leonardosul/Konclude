@@ -1,0 +1,5 @@
+Declaration(NamedIndividual(<http://example.org/acme#v1>))
+Declaration(NamedIndividual(<http://example.org/acme#v2>))
+ObjectPropertyAssertion(<https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/hasPrimaryAccountHolder> <https://rdf.gleif.org/L1/L-213800D1EI4B9WTWWD28-LEI> <http://example.org/acme#v1>)
+ObjectPropertyAssertion(<https://spec.edmcouncil.org/fibo/ontology/FBC/ProductsAndServices/ClientsAndAccounts/hasPrimaryAccountHolder> <https://rdf.gleif.org/L1/L-213800D1EI4B9WTWWD28-LEI> <http://example.org/acme#v2>)
+DifferentIndividuals(<http://example.org/acme#v1> <http://example.org/acme#v2>)
